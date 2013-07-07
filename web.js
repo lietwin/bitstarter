@@ -3,9 +3,11 @@ var fs = require('fs');
 var app = express.createServer(express.logger());
 
 app.get('/', function(request, response) {
-  fs.readFileSync('index.html', function(err, data){
+  fs.readFile('index.html','binary', function(err, data){
   if(err) throw err;
-    response.send(new Buffer(data).toString());
+    response.writeHead(200, {"Content-Type": "text/html"});
+    response.write(data, 'binary');
+    response.end();
     //console.log(new Buffer(data).toString('utf8'));
 });
 
