@@ -45,7 +45,7 @@ var assertURLExists = function(inurl){
       console.error("%s not found. Exiting.", webpage);
       process.exit(1);
     } 
-   // console.log(webpage);
+//   console.log(webpage);
     return webpage;
   }); 
 };
@@ -54,16 +54,17 @@ var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
-var cheerioWebPage = function (webpage) {
-  return cheerio.load(webpage)
+
+var cheerioWebPage = function (webpageurl) {
+    return cheerio.load(assertURLExists(webpageurl));
 };
 
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var checkHtml = function($, checksfile) {
+    //$ = cheerioHtmlFile(htmlfile);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -73,13 +74,14 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
-var checkWebPage = function(webpage, checksfile) {
-    $ = cheerioWebPage(webpage);
+var checkWebPage = function(webpageurl, checksfile) {
+    $ = cheerioWebPage(webpageurl);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
         var present = $(checks[ii]).length > 0;
         out[checks[ii]] = present;
+        console.log($(checks[ii]) + ' : ' + present);
     }
     //console.log(out +"\n");
     return out;
@@ -94,21 +96,17 @@ var clone = function(fn) {
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+        .option('-u, --url <webpage_url>', 'URL of the webpage',  WEBPAGEURL_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
-	.option('-u, --url <webpage_url>', 'URL of the webpage', clone(assertURLExists), WEBPAGEURL_DEFAULT)
         .parse(process.argv);
-    if(program.file){
-      console.log("option == file\n");
-     //var  checkJson = checkHtmlFile(program.file, program.checks);
-     console.log(JSON.stringify(checkHtmlFile(program.file, program.checks), null, 4));     
+    if(program.url){
+	var $ = cheerioWebPage(program.url); 
+//	console.error('webpage');    
     }else{
-      //var checkJson2 = checkWebPage(program.url, program.checks);
-      console.log("option == url\n");  
-      console.log(JSON.stringify(checkWebPage(program.url, program.checks), null, 4));
-   }  
-    //var outJson = JSON.stringify(checkJson, null, 4);
-    //console.log(outJson);
+	var $ = cheerioHtmlFile(program.file);
+  //      console.error('file');
+   }    
+  console.log(JSON.stringify(checkHtml($, program.checks), null, 4));
 } else {
-    exports.checkHtmlFile = checkHtmlFile;
-    exports.checkWebPage = checkWebPage;
+    exports.checkHtml = checkHtml;
 }
